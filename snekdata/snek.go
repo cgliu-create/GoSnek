@@ -6,106 +6,141 @@ import (
 	"github.com/cgliu-create/GoSnek/duplicateobj"
 )
 
-type snekControl struct {
+// SnekControl - holds direction booleans
+type SnekControl struct {
 	isGoingLeft, isGoingRight, isGoingUp, isGoingDown bool
 }
 
-func newSnekControl() *snekControl {
-	var newSC snekControl
-	newSC.turnRight()
+// NewSnekControl - creates a default SnekControl
+func NewSnekControl() *SnekControl {
+	var newSC SnekControl
+	newSC.TurnRight()
 	return &newSC
 }
-func (c *snekControl) turnLeft() {
+
+// TurnLeft - changes only left to true
+func (c *SnekControl) TurnLeft() {
 	c.isGoingLeft, c.isGoingRight, c.isGoingUp, c.isGoingDown = true, false, false, false
 }
-func (c *snekControl) turnRight() {
+
+// TurnRight - changes only right to true
+func (c *SnekControl) TurnRight() {
 	c.isGoingLeft, c.isGoingRight, c.isGoingUp, c.isGoingDown = false, true, false, false
 }
-func (c *snekControl) turnUp() {
+
+// TurnUp - changes only up to true
+func (c *SnekControl) TurnUp() {
 	c.isGoingLeft, c.isGoingRight, c.isGoingUp, c.isGoingDown = false, false, true, false
 }
-func (c *snekControl) turnDown() {
+
+// TurnDown - changes only down to true
+func (c *SnekControl) TurnDown() {
 	c.isGoingLeft, c.isGoingRight, c.isGoingUp, c.isGoingDown = false, false, false, true
 }
 
-var colors = map[int]string{0: "black", 1: "green", 2: "red"}
-
-type grid struct {
-	blockWidth, blockheight, numHoriz, numVert int
-}
-
-// Point coordinates
+// Point - holds coordinates
 type Point struct {
 	X, Y int
 }
-type block struct {
-	coord Point
-	color int
-}
-type snekGame struct {
-	gridData    grid
-	player      snekControl
-	snake, food []block
+
+// Block - holds a point and color reference
+type Block struct {
+	Coord Point
+	Color int
 }
 
-func newSnekGame(igrid grid, icontrol snekControl, isnake, ifood []block) *snekGame {
-	newGame := snekGame{gridData: igrid, player: icontrol, snake: isnake, food: ifood}
-	return &newGame
+// Grid - holds game dimensions
+type Grid struct {
+	NumHoriz, NumVert int
 }
-func (sg *snekGame) generateFood() {
-	rx := rand.Intn(sg.gridData.numHoriz)
-	ry := rand.Intn(sg.gridData.numVert)
-	sg.food = append(sg.food, block{coord: Point{X: rx, Y: ry}, color: 2})
+
+// SnekGame - holds relevant game data
+type SnekGame struct {
+	GridData    Grid
+	Player      *SnekControl
+	Snake, Food []Block
 }
-func (sg *snekGame) checkFoodEaten() bool {
-	if len(sg.food) == 0 {
+
+// NewGrid - creates a new grid struct with specified dimensions
+func NewGrid(nh, nv int) Grid {
+	grid := Grid{NumHoriz: nh, NumVert: nv}
+	return grid
+}
+
+// NewSnake - creates a snake block list with an inital block
+func NewSnake(x, y int) []Block {
+	snake := []Block{Block{Coord: Point{X: x, Y: y}, Color: 1}}
+	return snake
+}
+
+// NewFood - creates a food block list with an inital block
+func NewFood(x, y int) []Block {
+	food := []Block{Block{Coord: Point{X: x, Y: y}, Color: 2}}
+	return food
+}
+
+// NewSnekGame - creates a new Snek Game with defined components
+func NewSnekGame(igrid Grid, icontrol *SnekControl, isnake, ifood []Block) *SnekGame {
+	game := SnekGame{GridData: igrid, Player: icontrol, Snake: isnake, Food: ifood}
+	return &game
+}
+func (sg *SnekGame) generateFood() {
+	rx := rand.Intn(sg.GridData.NumHoriz)
+	ry := rand.Intn(sg.GridData.NumVert)
+	sg.Food = append(sg.Food, Block{Coord: Point{X: rx, Y: ry}, Color: 2})
+}
+func (sg *SnekGame) checkFoodEaten() bool {
+	if len(sg.Food) == 0 {
 		sg.generateFood()
 		return false
 	}
-	head := sg.snake[len(sg.snake)-1]
-	ifood := sg.food[0]
-	if head.coord.X == ifood.coord.X && head.coord.Y == ifood.coord.Y {
-		sg.food = []block{}
+	head := sg.Snake[len(sg.Snake)-1]
+	ifood := sg.Food[0]
+	if head.Coord.X == ifood.Coord.X && head.Coord.Y == ifood.Coord.Y {
+		sg.Food = []Block{}
 		return true
 	}
 	return false
 }
-func (sg *snekGame) growSnake(nx, ny int) {
-	sg.snake = append(sg.snake, block{coord: Point{X: nx, Y: ny}, color: 1})
+func (sg *SnekGame) growSnake(nx, ny int) {
+	sg.Snake = append(sg.Snake, Block{Coord: Point{X: nx, Y: ny}, Color: 1})
 	if !sg.checkFoodEaten() {
-		sg.snake = sg.snake[1:]
+		sg.Snake = sg.Snake[1:]
 	}
 }
-func (sg *snekGame) checkSelfCollision() bool {
+func (sg *SnekGame) checkSelfCollision() bool {
 	var Pointlist []interface{}
 	fields := []string{"X", "Y"}
-	for _, b := range sg.snake {
-		Pointlist = append(Pointlist, b.coord)
+	for _, b := range sg.Snake {
+		Pointlist = append(Pointlist, b.Coord)
 	}
 	repeats := duplicateobj.FindDuplicateObj(fields, Pointlist)
 	return len(repeats) == 0
 }
-func (sg *snekGame) checkOutOfBounds(x, y int) bool {
-	return y < 0 || x < 0 || y >= sg.gridData.numVert || x >= sg.gridData.numHoriz
+func (sg *SnekGame) checkOutOfBounds(x, y int) bool {
+	return y < 0 || x < 0 || y > sg.GridData.NumVert || x > sg.GridData.NumHoriz
 }
-func (sg *snekGame) moveOrDie() bool {
-	head := sg.snake[len(sg.snake)-1]
-	nx, ny := head.coord.X, head.coord.Y
-	if sg.player.isGoingLeft {
+
+// MoveOrDie - calls all the relevant game operations
+// returns if snake is alive
+func (sg *SnekGame) MoveOrDie() bool {
+	head := sg.Snake[len(sg.Snake)-1]
+	nx, ny := head.Coord.X, head.Coord.Y
+	if sg.Player.isGoingLeft {
 		nx--
 	}
-	if sg.player.isGoingRight {
+	if sg.Player.isGoingRight {
 		nx++
 	}
-	if sg.player.isGoingUp {
+	if sg.Player.isGoingUp {
 		ny--
 	}
-	if sg.player.isGoingDown {
+	if sg.Player.isGoingDown {
 		ny++
 	}
+	sg.growSnake(nx, ny)
 	if sg.checkOutOfBounds(nx, ny) || sg.checkSelfCollision() {
 		return false
 	}
-	sg.growSnake(nx, ny)
 	return true
 }
