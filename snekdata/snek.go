@@ -115,8 +115,9 @@ func (sg *SnekGame) checkSelfCollision() bool {
 		Pointlist = append(Pointlist, b.Coord)
 	}
 	repeats := duplicateobj.FindDuplicateObj(fields, Pointlist)
-	return len(repeats) == 0
+	return len(repeats) != 0
 }
+
 func (sg *SnekGame) checkOutOfBounds(x, y int) bool {
 	return y < 0 || x < 0 || y > sg.GridData.NumVert || x > sg.GridData.NumHoriz
 }

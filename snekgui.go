@@ -61,7 +61,7 @@ func main() {
 	window.Show()
 
 	timer = core.NewQTimer(nil)
-	timer.SetInterval(500)
+	timer.SetInterval(200)
 	timer.Start2()
 	timer.ConnectTimerEvent(timerEvent)
 
@@ -70,10 +70,15 @@ func main() {
 }
 
 func timerEvent(e *core.QTimerEvent) {
-	gamefunction()
+	alive := game.MoveOrDie()
+	if !alive {
+		os.Exit(0)
+	}
+	clear()
+	drawBlocks(game.Snake)
+	drawBlocks(game.Food)
 }
 
-//this works
 func clear() {
 	img := item.Pixmap().ToImage()
 	for i := 0; i < nh; i++ {
@@ -84,14 +89,12 @@ func clear() {
 	item.SetPixmap(gui.NewQPixmap().FromImage(img, 0))
 }
 
-// this works
 func drawpixel(x, y, c int) {
 	img := item.Pixmap().ToImage()
 	img.SetPixelColor2(x, y, colors[c])
 	item.SetPixmap(gui.NewQPixmap().FromImage(img, 0))
 }
 
-// this works
 func drawBlocks(blocks []snekdata.Block) {
 	for _, block := range blocks {
 		c := block.Color
@@ -99,12 +102,7 @@ func drawBlocks(blocks []snekdata.Block) {
 		drawpixel(x, y, c)
 	}
 }
-func gamefunction() {
-	game.MoveOrDie()
-	clear()
-	drawBlocks(game.Snake)
-	drawBlocks(game.Food)
-}
+
 func keyPressEvent(e *gui.QKeyEvent) {
 	switch int32(e.Key()) {
 	case int32(core.Qt__Key_Left):
